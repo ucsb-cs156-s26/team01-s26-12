@@ -2,7 +2,7 @@
   "databaseChangeLog": [
     {
       "changeSet": {
-        "id": "MenuItemReview-table-v1",
+        "id": "MenuItemReview-table-v2",
         "author": "arjunmalaviya",
         "changes": [
           {
@@ -23,7 +23,7 @@
                 {
                   "column": {
                     "name": "item_id",
-                    "type": "varchar(255)", 
+                    "type": "bigint",
                     "constraints": {
                       "nullable": false
                     }
