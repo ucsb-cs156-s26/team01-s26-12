@@ -37,56 +37,56 @@ public class MenuItemReviewController extends ApiController {
         return reviews;
     }
 
-    @Operation(summary = "Get a single review")
-    @PreAuthorize("hasRole('ROLE_USER')")
-    @GetMapping("")
-    public MenuItemReview getById(@Parameter(name = "id") @RequestParam Long id) {
-        MenuItemReview review = menuItemReviewRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
+  @Operation(summary = "Get a single review")
+  @PreAuthorize("hasRole('ROLE_USER')")
+  @GetMapping("")
+  public MenuItemReview getById(@Parameter(name = "id") @RequestParam Long id) {
+    MenuItemReview review = menuItemReviewRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
+    return review;
+  }
 
-        return review;
-    }
+  @Operation(summary = "Create a new review")
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @PostMapping("/post")
+  public MenuItemReview postMenuItemReview(
+      @Parameter(name = "itemId") @RequestParam Long itemId,
+      @Parameter(name = "reviewerEmail") @RequestParam String reviewerEmail,
+      @Parameter(name = "stars") @RequestParam int stars,
+      @Parameter(name = "dateReviewed", description = "date (in iso format, e.g. YYYY-mm-ddTHH:MM:SS)")
+          @RequestParam("dateReviewed")
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDateTime dateReviewed,
+      @Parameter(name = "comments") @RequestParam String comments) {
 
-    @Operation(summary = "Create a new review")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PostMapping("/post")
-    public MenuItemReview postMenuItemReview(
-            @Parameter(name = "itemId") @RequestParam Long itemId,
-            @Parameter(name = "reviewerEmail") @RequestParam String reviewerEmail,
-            @Parameter(name = "stars") @RequestParam int stars,
-            @Parameter(name = "dateReviewed", description = "date (in iso format, e.g. YYYY-mm-ddTHH:MM:SS)") @RequestParam("dateReviewed") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateReviewed,
-            @Parameter(name = "comments") @RequestParam String comments) {
+    MenuItemReview review = new MenuItemReview();
+    review.setItemId(itemId);
+    review.setReviewerEmail(reviewerEmail);
+    review.setStars(stars);
+    review.setDateReviewed(dateReviewed);
+    review.setComments(comments);
 
-        MenuItemReview menuItemReview = new MenuItemReview();
-        menuItemReview.setItemId(itemId);
-        menuItemReview.setReviewerEmail(reviewerEmail);
-        menuItemReview.setStars(stars);
-        menuItemReview.setDateReviewed(dateReviewed);
-        menuItemReview.setComments(comments);
+    MenuItemReview savedReview = menuItemReviewRepository.save(review);
+    return savedReview;
+  }
 
-        MenuItemReview savedReview = menuItemReviewRepository.save(menuItemReview);
+  @Operation(summary = "Update a single review")
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @PutMapping("")
+  public MenuItemReview updateMenuItemReview(
+      @Parameter(name = "id") @RequestParam Long id, 
+      @RequestBody @Valid MenuItemReview incoming) {
 
-        return savedReview;
-    }
+    MenuItemReview review = menuItemReviewRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
 
-    @Operation(summary = "Update a single review")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PutMapping("")
-    public MenuItemReview updateMenuItemReview(
-            @Parameter(name = "id") @RequestParam Long id,
-            @RequestBody @Valid MenuItemReview incoming) {
+    review.setItemId(incoming.getItemId());
+    review.setReviewerEmail(incoming.getReviewerEmail());
+    review.setStars(incoming.getStars());
+    review.setDateReviewed(incoming.getDateReviewed());
+    review.setComments(incoming.getComments());
 
-        MenuItemReview review = menuItemReviewRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
-
-        review.setItemId(incoming.getItemId());
-        review.setReviewerEmail(incoming.getReviewerEmail());
-        review.setStars(incoming.getStars());
-        review.setDateReviewed(incoming.getDateReviewed());
-        review.setComments(incoming.getComments());
-
-        menuItemReviewRepository.save(review);
-
-        return review;
-    }
+    menuItemReviewRepository.save(review);
+    return review;
+  }
 }
