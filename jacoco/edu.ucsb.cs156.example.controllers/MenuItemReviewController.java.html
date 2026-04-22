@@ -24,14 +24,15 @@ import org.springframework.web.bind.annotation.RestController;
 <span class="fc" id="L24">@Slf4j</span>
 <span class="fc" id="L25">public class MenuItemReviewController extends ApiController {</span>
 
-  @Autowired MenuItemReviewRepository menuItemReviewRepository;
+  @Autowired
+private MenuItemReviewRepository menuItemReviewRepository;
 
   @Operation(summary = &quot;List all menu item reviews&quot;)
   @PreAuthorize(&quot;hasRole('ROLE_USER')&quot;)
   @GetMapping(&quot;/all&quot;)
   public Iterable&lt;MenuItemReview&gt; allMenuItemReviews() {
-<span class="fc" id="L33">    Iterable&lt;MenuItemReview&gt; reviews = menuItemReviewRepository.findAll();</span>
-<span class="fc" id="L34">    return reviews;</span>
+<span class="fc" id="L34">    Iterable&lt;MenuItemReview&gt; reviews = menuItemReviewRepository.findAll();</span>
+<span class="fc" id="L35">    return reviews;</span>
   }
 
   @Operation(summary = &quot;Get a single review&quot;)
@@ -39,12 +40,12 @@ import org.springframework.web.bind.annotation.RestController;
   @GetMapping(&quot;&quot;)
   public MenuItemReview getById(@Parameter(name = &quot;id&quot;) @RequestParam Long id)
       throws JsonProcessingException {
-<span class="fc" id="L42">    MenuItemReview review =</span>
+<span class="fc" id="L43">    MenuItemReview review =</span>
         menuItemReviewRepository
-<span class="fc" id="L44">            .findById(id)</span>
-<span class="fc" id="L45">            .orElseThrow(() -&gt; new EntityNotFoundException(MenuItemReview.class, id));</span>
+<span class="fc" id="L45">            .findById(id)</span>
+<span class="fc" id="L46">            .orElseThrow(() -&gt; new EntityNotFoundException(MenuItemReview.class, id));</span>
 
-<span class="fc" id="L47">    return review;</span>
+<span class="fc" id="L48">    return review;</span>
   }
 
   @Operation(summary = &quot;Create a new review&quot;)
@@ -63,16 +64,16 @@ import org.springframework.web.bind.annotation.RestController;
           LocalDateTime dateReviewed,
       @Parameter(name = &quot;comments&quot;) @RequestParam String comments) {
 
-<span class="fc" id="L66">    MenuItemReview menuItemReview = new MenuItemReview();</span>
-<span class="fc" id="L67">    menuItemReview.setItemId(itemId);</span>
-<span class="fc" id="L68">    menuItemReview.setReviewerEmail(reviewerEmail);</span>
-<span class="fc" id="L69">    menuItemReview.setStars(stars);</span>
-<span class="fc" id="L70">    menuItemReview.setDateReviewed(dateReviewed);</span>
-<span class="fc" id="L71">    menuItemReview.setComments(comments);</span>
+<span class="fc" id="L67">    MenuItemReview menuItemReview = new MenuItemReview();</span>
+<span class="fc" id="L68">    menuItemReview.setItemId(itemId);</span>
+<span class="fc" id="L69">    menuItemReview.setReviewerEmail(reviewerEmail);</span>
+<span class="fc" id="L70">    menuItemReview.setStars(stars);</span>
+<span class="fc" id="L71">    menuItemReview.setDateReviewed(dateReviewed);</span>
+<span class="fc" id="L72">    menuItemReview.setComments(comments);</span>
 
-<span class="fc" id="L73">    MenuItemReview savedReview = menuItemReviewRepository.save(menuItemReview);</span>
+<span class="fc" id="L74">    MenuItemReview savedReview = menuItemReviewRepository.save(menuItemReview);</span>
 
-<span class="fc" id="L75">    return savedReview;</span>
+<span class="fc" id="L76">    return savedReview;</span>
   }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
