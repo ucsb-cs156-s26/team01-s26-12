@@ -40,11 +40,8 @@ public class MenuItemReviewController extends ApiController {
   @PreAuthorize("hasRole('ROLE_USER')")
   @GetMapping("")
   public MenuItemReview getById(@Parameter(name = "id") @RequestParam Long id) {
-    MenuItemReview review =
-        menuItemReviewRepository
-            .findById(id)
-            .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
-
+    MenuItemReview review = menuItemReviewRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
     return review;
   }
 
@@ -69,7 +66,6 @@ public class MenuItemReviewController extends ApiController {
     review.setComments(comments);
 
     MenuItemReview savedReview = menuItemReviewRepository.save(review);
-
     return savedReview;
   }
 
@@ -77,12 +73,11 @@ public class MenuItemReviewController extends ApiController {
   @PreAuthorize("hasRole('ROLE_ADMIN')")
   @PutMapping("")
   public MenuItemReview updateMenuItemReview(
-      @Parameter(name = "id") @RequestParam Long id, @RequestBody @Valid MenuItemReview incoming) {
+      @Parameter(name = "id") @RequestParam Long id, 
+      @RequestBody @Valid MenuItemReview incoming) {
 
-    MenuItemReview review =
-        menuItemReviewRepository
-            .findById(id)
-            .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
+    MenuItemReview review = menuItemReviewRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
 
     review.setItemId(incoming.getItemId());
     review.setReviewerEmail(incoming.getReviewerEmail());
@@ -91,7 +86,6 @@ public class MenuItemReviewController extends ApiController {
     review.setComments(incoming.getComments());
 
     menuItemReviewRepository.save(review);
-
     return review;
   }
 }
