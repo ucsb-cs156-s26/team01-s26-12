@@ -2,10 +2,12 @@ package edu.ucsb.cs156.example.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -279,6 +281,68 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
                 .contentType("application/json")
                 .content(requestBody)
                 .with(csrf()))
+        .andExpect(status().isForbidden());
+  }
+
+  // -------------------------------------------------------------------------
+  // Tests for DELETE /api/MenuItemReview?id=...
+  // -------------------------------------------------------------------------
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void admin_can_delete_an_existing_review() throws Exception {
+
+    LocalDateTime ldt = LocalDateTime.parse("2022-01-03T00:00:00");
+    MenuItemReview review =
+        MenuItemReview.builder()
+            .itemId(1L)
+            .reviewerEmail("arjun@ucsb.edu")
+            .stars(5)
+            .dateReviewed(ldt)
+            .comments("Amazing")
+            .build();
+
+    when(menuItemReviewRepository.findById(eq(7L))).thenReturn(Optional.of(review));
+
+    MvcResult response =
+        mockMvc
+            .perform(delete("/api/MenuItemReview?id=7").with(csrf()))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    verify(menuItemReviewRepository, times(1)).findById(eq(7L));
+    verify(menuItemReviewRepository, times(1)).delete(eq(review));
+
+    Map<String, Object> json = responseToJson(response);
+    assertEquals("MenuItemReview with id 7 deleted", json.get("message"));
+  }
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void admin_gets_404_when_deleting_missing_review() throws Exception {
+
+    when(menuItemReviewRepository.findById(eq(7L))).thenReturn(Optional.empty());
+
+    MvcResult response =
+        mockMvc
+            .perform(delete("/api/MenuItemReview?id=7").with(csrf()))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    verify(menuItemReviewRepository, times(1)).findById(eq(7L));
+    verify(menuItemReviewRepository, never()).delete(org.mockito.ArgumentMatchers.any());
+
+    Map<String, Object> json = responseToJson(response);
+    assertEquals("EntityNotFoundException", json.get("type"));
+    assertEquals("MenuItemReview with id 7 not found", json.get("message"));
+  }
+
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void regular_user_cannot_delete_a_review() throws Exception {
+
+    mockMvc
+        .perform(delete("/api/MenuItemReview?id=7").with(csrf()))
         .andExpect(status().isForbidden());
   }
 }
