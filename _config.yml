@@ -23,4 +23,4 @@ repo_name: "TBD"
 repo: ucsb-cs156-s26/team01-s26-12
 owner: ucsb-cs156-s26
 repo_name: team01-s26-12
-pull_requests: [{"author":{"id":"U_kgDOBw_Igg","is_bot":false,"login":"ArjunLovesCoding","name":""},"headRefName":"MenuItemReview-get-show","number":45,"title":"Add GET (show) endpoint for MenuItemReviewMenu item review get show","url":"https://github.com/ucsb-cs156-s26/team01-s26-12/pull/45"}]
+pull_requests: []
