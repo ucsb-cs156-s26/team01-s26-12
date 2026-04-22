@@ -111,107 +111,165 @@ jobs:
           echo "github.repository_owner=${{ github.repository_owner }}"
       - name: Fetch Project ID
         id: find_project
+        shell: pwsh
         run: |
-          GQL_QUERY="{ organization(login: \"${{ github.repository_owner }}\") { projectsV2(first: 100) { nodes { id title updatedAt } } } }"
-          QUERY=$(jq -nc --arg q "$GQL_QUERY" '{"query": $q}')
-          RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.PAT }}" \
-            -H "Content-Type: application/json" \
-            -d "$QUERY" \
-            https://api.github.com/graphql)
-          echo "Projects JSON Output: $RESPONSE"
-
-          REPO_NAME="${{ needs.get_team_name.outputs.repository }}"
-          PROJECT_ID=$(echo "$RESPONSE" | jq -r --arg repo "$REPO_NAME" \
-            '.data.organization.projectsV2.nodes[] | select(.title | contains($repo)) | .id' | head -1)
-
-          if [ -z "$PROJECT_ID" ]; then
-            echo "No project found named $REPO_NAME."
-            exit 1
-          fi
-
-          echo "Found Project ID: $PROJECT_ID"
-          echo "project_id=$PROJECT_ID"
-          echo "$PROJECT_ID" >> project_id.txt
+          $query = @"
+          {
+            organization(login: "${{ github.repository_owner }}") {
+              projectsV2(first: 100) {
+                nodes {
+                  id
+                  title
+                  updatedAt
+                }
+              }
+            }
+          }
+          "@
+          $headers = @{
+              Authorization = "Bearer ${{ secrets.PAT }}"
+              "Content-Type" = "application/json"
+          }
+          $body = @{ query = $query } | ConvertTo-Json
+          $response = Invoke-WebRequest -Uri "https://api.github.com/graphql" -Method Post -Headers $headers -Body $body
+          Write-Host "Projects JSON Output: $($response.Content)"
+          
+          $projectID = ($response.Content | ConvertFrom-Json).data.organization.projectsV2.nodes | Where-Object { $_.title -like "*${{ needs.get_team_name.outputs.repository }}*" } | Select-Object -First 1 -ExpandProperty id
+          
+          if (-not $projectID) {
+              Write-Host "No project found named ${{ needs.get_team_name.outputs.repository }}."
+              exit 1
+          }
+          
+          Write-Host "Found Project ID: $projectID"
+          echo "project_id=$projectID"
+          echo $projectID >> project_id.txt
           ls project_id.txt
           cat project_id.txt
           pwd
        
       - name: Output GraphQL Query Result
         id: output_query
+        shell: pwsh
         env:
           PAT: ${{ secrets.PAT }}
+          PROJECT_ID: ${{ steps.get_project_id_from_file.outputs.project_id }}
         run: |
-          ls
-          PROJECT_ID=$(cat project_id.txt)
-          GQL_QUERY="{ node(id: \"$PROJECT_ID\") { ... on ProjectV2 { items(first: 100) { nodes { id fieldValues(first: 100) { nodes { ... on ProjectV2ItemFieldSingleSelectValue { field { ... on ProjectV2Field { name } } name } ... on ProjectV2ItemFieldTextValue { field { ... on ProjectV2Field { name } } text } } } content { ... on Issue { title assignees(first: 10) { nodes { login } } } ... on PullRequest { title assignees(first: 10) { nodes { login } } } } } } } } }"
-          QUERY=$(jq -nc --arg q "$GQL_QUERY" '{"query": $q}')
-          RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer $PAT" \
-            -H "Content-Type: application/json" \
-            -d "$QUERY" \
-            https://api.github.com/graphql)
-          echo "$RESPONSE"
-          echo "project_data=$RESPONSE" >> "$GITHUB_OUTPUT"
-          echo "$RESPONSE" >> project_data.json
+          dir
+          $PROJECT_ID = ( Get-Content -Path project_id.txt )
+          $TOKEN = $env:PAT
+          $query = @"
+          {
+            node(id: "$PROJECT_ID") {
+              ... on ProjectV2 {
+                items(first: 100) {
+                  nodes {
+                    id
+                    fieldValues(first: 100) {
+                      nodes {
+                        ... on ProjectV2ItemFieldSingleSelectValue {
+                          field {
+                            ... on ProjectV2Field {
+                              name
+                            }
+                          }
+                          name
+                        }
+                        ... on ProjectV2ItemFieldTextValue {
+                          field {
+                            ... on ProjectV2Field {
+                              name
+                            }
+                          }
+                          text
+                        }
+                      }
+                    }
+                    content {
+                      ... on Issue {
+                        title
+                        assignees(first: 10) {
+                          nodes {
+                            login
+                          }
+                        }
+                      }
+                      ... on PullRequest {
+                        title
+                        assignees(first: 10) {
+                          nodes {
+                            login
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          "@
+          $headers = @{
+              Authorization = "Bearer $TOKEN"
+              "Content-Type" = "application/json"
+          }
+          $body = @{ query = $query } | ConvertTo-Json
+          $response = Invoke-WebRequest -Uri "https://api.github.com/graphql" -Method Post -Headers $headers -Body $body
+          Write-Host $response.Content
+          echo "project_data=$($response.Content)" >> $GITHUB_OUTPUT
+          echo "$($response.Content)" >> project_data.json
           ls project_data.json
           cat project_data.json
 
       - name: Count Issues by Column and Assignee
         id: count_issues
-        shell: python
+        shell: pwsh
         env:
+          project_data: ${{ needs.get_project_id.outputs.project_data }}
           columns: ${{ env.COLUMNS }}
         run: |
-          import json
-          import os
-
-          with open('project_data.json', 'r') as f:
-              data = json.load(f)
-
-          print(f"Project Data JSON: {json.dumps(data, indent=2)}")
-          issue_counts = {}
-          columns = [c.strip() for c in os.environ.get('columns', '').split(',')]
-
-          for item in data['data']['node']['items']['nodes']:
-              print(f"Processing item: {item['id']}")
-              column_field = next(
-                  (n for n in item['fieldValues']['nodes'] if n.get('name') in columns),
-                  None
-              )
-              if column_field is not None:
-                  print(f"Found column field: {json.dumps(column_field, indent=2)}")
-                  column = column_field.get('name')
-                  print(f"Processing column: {column}")
-                  if column is not None:
-                      assignees = [n['login'] for n in item['content'].get('assignees', {}).get('nodes', [])]
-                      if not assignees:
-                          assignees = ['UNASSIGNED']
-                      for assignee in assignees:
-                          print(f"Processing assignee: {assignee}")
-                          if column not in issue_counts:
-                              issue_counts[column] = {}
-                          if assignee not in issue_counts[column]:
-                              issue_counts[column][assignee] = 0
-                          issue_counts[column][assignee] += 1
-              else:
-                  print(f"No column field found for item: {item['id']}")
-
-          for column in issue_counts:
-              print(f"Column: {column}")
-              for assignee in issue_counts[column]:
-                  print(f"  Assignee: {assignee}, Count: {issue_counts[column][assignee]}")
-
-          issue_counts_json = json.dumps(issue_counts, indent=2)
-          print(f"Issue Counts JSON: {issue_counts_json}")
-
-          with open('issue_counts.json', 'w') as f:
-              f.write(issue_counts_json)
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"issue_counts={issue_counts_json}\n")
-
-          print("Issue count process completed")
+          $data = ( Get-Content -Path project_data.json ) | ConvertFrom-Json
+          Write-Host "Project Data JSON: $($data | ConvertTo-Json -Depth 10)"
+          $issueCounts = @{}
+          $columns = $env:columns -split ", "
+          foreach ($item in $data.data.node.items.nodes) {
+            Write-Host "Processing item: $($item.id)"
+            $columnField = $item.fieldValues.nodes | Where-Object { $columns -contains $_.name }
+            if ($null -ne $columnField) {
+              Write-Host "Found column field: $($columnField | ConvertTo-Json -Depth 10)"
+              $column = $columnField.name
+              Write-Host "Processing column: $column"
+              if ($null -ne $column) {
+                $assignees = $item.content.assignees.nodes | Select-Object -ExpandProperty login
+                if ($assignees.Count -eq 0) {
+                  $assignees = @("UNASSIGNED")
+                }
+                foreach ($assignee in $assignees) {
+                  Write-Host "Processing assignee: $assignee"
+                  if (-not $issueCounts.ContainsKey($column)) {
+                    $issueCounts[$column] = @{}
+                  }
+                  if (-not $issueCounts[$column].ContainsKey($assignee)) {
+                    $issueCounts[$column][$assignee] = 0
+                  }
+                  $issueCounts[$column][$assignee]++
+                }
+              }
+            } else {
+              Write-Host "No column field found for item: $($item.id)"
+            }
+          }
+          foreach ($column in $issueCounts.Keys) {
+            Write-Host "Column: $column"
+            foreach ($assignee in $issueCounts[$column].Keys) {
+              Write-Host "  Assignee: $assignee, Count: $($issueCounts[$column][$assignee])"
+            }
+          }
+          $issueCountsJson = $issueCounts | ConvertTo-Json -Depth 10
+          Write-Host "Issue Counts JSON: $issueCountsJson"  # Debugging: Output the issue counts JSON
+          $issueCountsJson | Out-File issue_counts.json
+          echo "issue_counts=${issueCountsJson}" >> $GITHUB_OUTPUT
+          Write-Host "Issue count process completed"
       - name: Upload issue counts
         uses: actions/upload-artifact@v4
         with:
@@ -240,71 +298,85 @@ jobs:
 
       - name: Generate ASCII Table
         id: generate_table
-        shell: python
+        shell: pwsh
         env:
           columns: ${{ env.COLUMNS }}
         run: |
-          import json
-          import os
-          import sys
-
-          with open('issue_counts.json', 'r') as f:
-              content = f.read()
-
-          if not content.strip():
-              print("ISSUE_COUNTS is empty or not set")
-              sys.exit(1)
-
-          issue_counts = json.loads(content)
+          $issueCounts = Get-Content issue_counts.json
+          if (-not $issueCounts) {
+            Write-Host "ISSUE_COUNTS is empty or not set"
+            exit 1
+          }
+          $issueCounts = $issueCounts | ConvertFrom-Json
 
           # Collect all assignees and track unassigned issues
-          assignees = {}
-          unassigned_counts = {}
-          columns = [c.strip() for c in os.environ.get('columns', '').split(',')]
+          $assignees = @{}
+          $unassignedCounts = @{}
+          foreach ($column in $issueCounts.PSObject.Properties.Name) {
+            $unassignedCounts[$column] = 0
+            foreach ($assignee in $issueCounts.$column.PSObject.Properties.Name) {
+              if ($assignee -eq "UNASSIGNED") {
+                $unassignedCounts[$column] += $issueCounts.$column.$assignee
+              } else {
+                if (-not $assignees.ContainsKey($assignee)) {
+                  $assignees[$assignee] = @{}
+                }
+                $assignees[$assignee][$column] = $issueCounts.$column.$assignee
+              }
+            }
+          }
 
-          for column in issue_counts:
-              unassigned_counts[column] = 0
-              for assignee, count in issue_counts[column].items():
-                  if assignee == 'UNASSIGNED':
-                      unassigned_counts[column] += count
-                  else:
-                      if assignee not in assignees:
-                          assignees[assignee] = {}
-                      assignees[assignee][column] = count
+          # Define the column names and fixed widths
+          $columns = $env:columns -split ", "
+          $columnWidths = @(18, 3, 3, 3, 3)  # Fixed widths for each column
+
+          # Left align the text within each cell
+          function LeftAlignText($text, $width) {
+            $text = [string]$text  # Ensure $text is treated as a string
+            $padding = " " * [math]::Max(0, $width - $text.Length)
+            return $text + $padding
+          }
 
           # Generate the table header with left-aligned text
-          header = "| login            |"
-          for column in columns:
-              header += f" {column[:4]} |"
+          $header = "| login            |"
+          foreach ($column in $columns) {
+            $header += " " + $column.Substring(0, 4) + " |"
+          }
+
 
           # Define the separator with exact dash counts for each column
-          separator = "|------------------|"
-          for _ in columns:
-              separator += "------|"
+          $separator = "|------------------|"
+          foreach ($width in $columnWidths[1..$columnWidths.Length]) {
+            $separator += "------|"
+          }
 
           # Construct the full table
-          table = f"{header}\n{separator}\n"
+          $table = "$header`n$separator`n"
 
           # Generate the table rows
-          for assignee in assignees:
-              row = f"| {assignee[:17]:<17}|"
-              for column in columns:
-                  count = str(assignees[assignee].get(column, 0))
-                  row += f" {count:>4} |"
-              table += row + "\n"
+          foreach ($assignee in $assignees.Keys) {
+            $row = "| " + (LeftAlignText $assignee 17) + "|"
+            foreach ($column in $columns) {
+              $count = if ($assignees[$assignee].ContainsKey($column)) { "$($assignees[$assignee][$column])" } else { "0" }
+              $leftAlignedCount = printf "%4s" $count
+              $row += " $leftAlignedCount |"
+
+            }
+            $table += "$row`n"
+          }
 
           # Add the unassigned row
-          unassigned_row = f"| {'UNASSIGNED':<17}|"
-          for column in columns:
-              count = str(unassigned_counts.get(column, 0))
-              unassigned_row += f" {count:>4} |"
-          table += unassigned_row + "\n"
+          $unassignedRow = "| " + (LeftAlignText "UNASSIGNED" 17) + "|"
+          foreach ($column in $columns) {
+            $unassignedCount = $unassignedCounts[$column]
+            $leftAlignedUnassignedCount = printf "%4s" $unassignedCount
+            $unassignedRow += " $leftAlignedUnassignedCount |"
+          }
+          $table += "$unassignedRow`n"
 
-          print(f"ASCII Table:\n{table}")
-          with open('ascii_table.txt', 'w') as f:
-              f.write(table)
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"ascii_table={table}\n")
+          Write-Host "ASCII Table:`n$table"
+          $table | Out-File ascii_table.txt
+          echo "ascii_table=${table}" >> $GITHUB_OUTPUT
 
       - name: Upload ASCII Table
         uses: actions/upload-artifact@v4
