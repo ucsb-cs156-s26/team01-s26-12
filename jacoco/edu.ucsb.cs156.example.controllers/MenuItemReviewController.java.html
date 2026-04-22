@@ -63,20 +63,20 @@ import org.springframework.web.bind.annotation.RestController;
   public MenuItemReview updateMenuItemReview(
       @Parameter(name = &quot;id&quot;) @RequestParam Long id, @RequestBody @Valid MenuItemReview incoming) {
 
-<span class="nc" id="L66">    MenuItemReview review =</span>
+<span class="fc" id="L66">    MenuItemReview review =</span>
         menuItemReviewRepository
-<span class="nc" id="L68">            .findById(id)</span>
-<span class="nc" id="L69">            .orElseThrow(() -&gt; new EntityNotFoundException(MenuItemReview.class, id));</span>
+<span class="fc" id="L68">            .findById(id)</span>
+<span class="fc" id="L69">            .orElseThrow(() -&gt; new EntityNotFoundException(MenuItemReview.class, id));</span>
 
-<span class="nc" id="L71">    review.setItemId(incoming.getItemId());</span>
-<span class="nc" id="L72">    review.setReviewerEmail(incoming.getReviewerEmail());</span>
-<span class="nc" id="L73">    review.setStars(incoming.getStars());</span>
-<span class="nc" id="L74">    review.setDateReviewed(incoming.getDateReviewed());</span>
-<span class="nc" id="L75">    review.setComments(incoming.getComments());</span>
+<span class="fc" id="L71">    review.setItemId(incoming.getItemId());</span>
+<span class="fc" id="L72">    review.setReviewerEmail(incoming.getReviewerEmail());</span>
+<span class="fc" id="L73">    review.setStars(incoming.getStars());</span>
+<span class="fc" id="L74">    review.setDateReviewed(incoming.getDateReviewed());</span>
+<span class="fc" id="L75">    review.setComments(incoming.getComments());</span>
 
-<span class="nc" id="L77">    menuItemReviewRepository.save(review);</span>
+<span class="fc" id="L77">    menuItemReviewRepository.save(review);</span>
 
-<span class="nc" id="L79">    return review;</span>
+<span class="fc" id="L79">    return review;</span>
   }
 
   @Operation(summary = &quot;Create a new review&quot;)
