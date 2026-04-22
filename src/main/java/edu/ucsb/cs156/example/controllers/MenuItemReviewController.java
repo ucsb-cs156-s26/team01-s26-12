@@ -24,8 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class MenuItemReviewController extends ApiController {
 
-  @Autowired
-private MenuItemReviewRepository menuItemReviewRepository;
+  @Autowired MenuItemReviewRepository menuItemReviewRepository;
 
   @Operation(summary = "List all menu item reviews")
   @PreAuthorize("hasRole('ROLE_USER')")
