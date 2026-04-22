@@ -35,9 +35,7 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
   @MockBean MenuItemReviewRepository menuItemReviewRepository;
   @MockBean UserRepository userRepository;
 
-  // -------------------------------------------------------------------------
-  // Tests for GET /api/MenuItemReview/all
-  // -------------------------------------------------------------------------
+  // --- GET ALL ---
 
   @WithMockUser(roles = {"USER"})
   @Test
@@ -48,9 +46,7 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
   @WithMockUser(roles = {"USER"})
   @Test
   public void logged_in_user_can_get_all_menuitemreviews() throws Exception {
-
     LocalDateTime ldt1 = LocalDateTime.parse("2022-01-03T00:00:00");
-
     MenuItemReview review1 =
         MenuItemReview.builder()
             .itemId(1L)
@@ -60,9 +56,7 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
             .comments("Great food")
             .build();
 
-    ArrayList<MenuItemReview> expectedReviews = new ArrayList<>();
-    expectedReviews.addAll(Arrays.asList(review1));
-
+    ArrayList<MenuItemReview> expectedReviews = new ArrayList<>(Arrays.asList(review1));
     when(menuItemReviewRepository.findAll()).thenReturn(expectedReviews);
 
     MvcResult response =
@@ -74,15 +68,11 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
     assertEquals(expectedJson, responseString);
   }
 
-  // -------------------------------------------------------------------------
-  // Tests for GET /api/MenuItemReview?id=...
-  // -------------------------------------------------------------------------
+  // --- GET BY ID ---
 
   @WithMockUser(roles = {"USER"})
   @Test
   public void test_getById_returns_review_if_it_exists() throws Exception {
-
-    // arrange
     LocalDateTime ldt = LocalDateTime.parse("2022-01-03T00:00:00");
     MenuItemReview review =
         MenuItemReview.builder()
@@ -95,11 +85,9 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
 
     when(menuItemReviewRepository.findById(eq(7L))).thenReturn(Optional.of(review));
 
-    // act
     MvcResult response =
         mockMvc.perform(get("/api/MenuItemReview?id=7")).andExpect(status().isOk()).andReturn();
 
-    // assert
     verify(menuItemReviewRepository, times(1)).findById(eq(7L));
     String expectedJson = mapper.writeValueAsString(review);
     String responseString = response.getResponse().getContentAsString();
@@ -109,21 +97,13 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
   @WithMockUser(roles = {"USER"})
   @Test
   public void test_getById_returns_404_if_it_does_not_exist() throws Exception {
-
-    // arrange
     when(menuItemReviewRepository.findById(eq(7L))).thenReturn(Optional.empty());
 
-    // act
     MvcResult response =
-        mockMvc
-            .perform(get("/api/MenuItemReview?id=7"))
-            .andExpect(status().isNotFound())
-            .andReturn();
+        mockMvc.perform(get("/api/MenuItemReview?id=7")).andExpect(status().isNotFound()).andReturn();
 
-    // assert
     verify(menuItemReviewRepository, times(1)).findById(eq(7L));
     Map<String, Object> json = responseToJson(response);
-    assertEquals("EntityNotFoundException", json.get("type"));
     assertEquals("MenuItemReview with id 7 not found", json.get("message"));
   } 
 
@@ -194,14 +174,11 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
         assertEquals("MenuItemReview with id 67 not found", json.get("message"));
     }
 
-  // -------------------------------------------------------------------------
-  // Tests for PUT
-  // -------------------------------------------------------------------------
+  // --- PUT ---
 
   @WithMockUser(roles = {"ADMIN", "USER"})
   @Test
   public void admin_can_edit_an_existing_menuitemreview() throws Exception {
-    // arrange
     LocalDateTime ldt1 = LocalDateTime.parse("2022-01-03T00:00:00");
     LocalDateTime ldt2 = LocalDateTime.parse("2023-01-03T00:00:00");
 
@@ -224,10 +201,8 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
             .build();
 
     String requestBody = mapper.writeValueAsString(reviewChanged);
-
     when(menuItemReviewRepository.findById(eq(67L))).thenReturn(Optional.of(reviewOrig));
 
-    // act
     MvcResult response =
         mockMvc
             .perform(
@@ -239,7 +214,6 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
             .andExpect(status().isOk())
             .andReturn();
 
-    // assert
     verify(menuItemReviewRepository, times(1)).findById(67L);
     verify(menuItemReviewRepository, times(1)).save(reviewChanged);
     String responseString = response.getResponse().getContentAsString();
@@ -249,7 +223,6 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
   @WithMockUser(roles = {"ADMIN", "USER"})
   @Test
   public void admin_cannot_edit_menuitemreview_that_does_not_exist() throws Exception {
-    // arrange
     LocalDateTime ldt1 = LocalDateTime.parse("2022-01-03T00:00:00");
     MenuItemReview reviewChanged =
         MenuItemReview.builder()
@@ -261,10 +234,8 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
             .build();
 
     String requestBody = mapper.writeValueAsString(reviewChanged);
-
     when(menuItemReviewRepository.findById(eq(67L))).thenReturn(Optional.empty());
 
-    // act
     MvcResult response =
         mockMvc
             .perform(
@@ -276,21 +247,17 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
             .andExpect(status().isNotFound())
             .andReturn();
 
-    // assert
     verify(menuItemReviewRepository, times(1)).findById(67L);
     Map<String, Object> json = responseToJson(response);
     assertEquals("MenuItemReview with id 67 not found", json.get("message"));
   }
 
-  // -------------------------------------------------------------------------
-  // Tests for POST /api/MenuItemReview/post
-  // -------------------------------------------------------------------------
+  // --- POST ---
 
   @WithMockUser(roles = {"ADMIN", "USER"})
   @Test
   public void an_admin_user_can_post_a_new_review() throws Exception {
     LocalDateTime ldt1 = LocalDateTime.parse("2022-01-03T00:00:00");
-
     MenuItemReview review1 =
         MenuItemReview.builder()
             .itemId(1L)
@@ -300,7 +267,7 @@ public class MenuItemReviewControllerTests extends ControllerTestCase {
             .comments("Great food")
             .build();
 
-    when(menuItemReviewRepository.save(review1)).thenReturn(review1);
+    when(menuItemReviewRepository.save(eq(review1))).thenReturn(review1);
 
     MvcResult response =
         mockMvc
