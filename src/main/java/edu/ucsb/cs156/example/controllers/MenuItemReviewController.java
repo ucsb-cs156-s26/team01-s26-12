@@ -1,92 +1,166 @@
 package edu.ucsb.cs156.example.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import edu.ucsb.cs156.example.ControllerTestCase;
 import edu.ucsb.cs156.example.entities.MenuItemReview;
-import edu.ucsb.cs156.example.errors.EntityNotFoundException;
 import edu.ucsb.cs156.example.repositories.MenuItemReviewRepository;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import edu.ucsb.cs156.example.repositories.UserRepository;
+import edu.ucsb.cs156.example.testconfig.TestConfig;
 import java.time.LocalDateTime;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MvcResult;
 
-@Tag(name = "MenuItemReview")
-@RequestMapping("/api/MenuItemReview")
-@RestController
-@Slf4j
-public class MenuItemReviewController extends ApiController {
+@WebMvcTest(controllers = MenuItemReviewController.class)
+@Import(TestConfig.class)
+public class MenuItemReviewControllerTests extends ControllerTestCase {
 
-    @Autowired
-    MenuItemReviewRepository menuItemReviewRepository;
+  @MockBean MenuItemReviewRepository menuItemReviewRepository;
+  @MockBean UserRepository userRepository;
 
-    @Operation(summary = "List all menu item reviews")
-    @PreAuthorize("hasRole('ROLE_USER')")
-    @GetMapping("/all")
-    public Iterable<MenuItemReview> allMenuItemReviews() {
-        Iterable<MenuItemReview> reviews = menuItemReviewRepository.findAll();
-        return reviews;
-    }
+  // -------------------------------------------------------------------------
+  // Tests for GET /api/MenuItemReview/all
+  // -------------------------------------------------------------------------
 
-    @Operation(summary = "Get a single review")
-    @PreAuthorize("hasRole('ROLE_USER')")
-    @GetMapping("")
-    public MenuItemReview getById(@Parameter(name = "id") @RequestParam Long id) {
-        MenuItemReview review = menuItemReviewRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void logged_in_users_can_get_all() throws Exception {
+    mockMvc.perform(get("/api/MenuItemReview/all")).andExpect(status().isOk());
+  }
 
-        return review;
-    }
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void logged_in_user_can_get_all_menuitemreviews() throws Exception {
 
-    @Operation(summary = "Create a new review")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PostMapping("/post")
-    public MenuItemReview postMenuItemReview(
-            @Parameter(name = "itemId") @RequestParam Long itemId,
-            @Parameter(name = "reviewerEmail") @RequestParam String reviewerEmail,
-            @Parameter(name = "stars") @RequestParam int stars,
-            @Parameter(name = "dateReviewed", description = "date (in iso format, e.g. YYYY-mm-ddTHH:MM:SS)") @RequestParam("dateReviewed") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateReviewed,
-            @Parameter(name = "comments") @RequestParam String comments) {
+    LocalDateTime ldt1 = LocalDateTime.parse("2022-01-03T00:00:00");
 
-        MenuItemReview menuItemReview = new MenuItemReview();
-        menuItemReview.setItemId(itemId);
-        menuItemReview.setReviewerEmail(reviewerEmail);
-        menuItemReview.setStars(stars);
-        menuItemReview.setDateReviewed(dateReviewed);
-        menuItemReview.setComments(comments);
+    MenuItemReview review1 =
+        MenuItemReview.builder()
+            .itemId(1L)
+            .reviewerEmail("cgaucho@ucsb.edu")
+            .stars(5)
+            .dateReviewed(ldt1)
+            .comments("Great food")
+            .build();
 
-        MenuItemReview savedReview = menuItemReviewRepository.save(menuItemReview);
+    ArrayList<MenuItemReview> expectedReviews = new ArrayList<>();
+    expectedReviews.addAll(Arrays.asList(review1));
 
-        return savedReview;
-    }
+    when(menuItemReviewRepository.findAll()).thenReturn(expectedReviews);
 
-    @Operation(summary = "Update a single review")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PutMapping("")
-    public MenuItemReview updateMenuItemReview(
-            @Parameter(name = "id") @RequestParam Long id,
-            @RequestBody @Valid MenuItemReview incoming) {
+    MvcResult response =
+        mockMvc.perform(get("/api/MenuItemReview/all")).andExpect(status().isOk()).andReturn();
 
-        MenuItemReview review = menuItemReviewRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
+    verify(menuItemReviewRepository, times(1)).findAll();
+    String expectedJson = mapper.writeValueAsString(expectedReviews);
+    String responseString = response.getResponse().getContentAsString();
+    assertEquals(expectedJson, responseString);
+  }
 
-        review.setItemId(incoming.getItemId());
-        review.setReviewerEmail(incoming.getReviewerEmail());
-        review.setStars(incoming.getStars());
-        review.setDateReviewed(incoming.getDateReviewed());
-        review.setComments(incoming.getComments());
+  // -------------------------------------------------------------------------
+  // Tests for GET /api/MenuItemReview?id=...
+  // -------------------------------------------------------------------------
 
-        menuItemReviewRepository.save(review);
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void test_getById_returns_review_if_it_exists() throws Exception {
 
-        return review;
-    }
+    // arrange
+    LocalDateTime ldt = LocalDateTime.parse("2022-01-03T00:00:00");
+    MenuItemReview review =
+        MenuItemReview.builder()
+            .itemId(1L)
+            .reviewerEmail("arjun@ucsb.edu")
+            .stars(5)
+            .dateReviewed(ldt)
+            .comments("Amazing")
+            .build();
+
+    when(menuItemReviewRepository.findById(eq(7L))).thenReturn(Optional.of(review));
+
+    // act
+    MvcResult response =
+        mockMvc.perform(get("/api/MenuItemReview?id=7")).andExpect(status().isOk()).andReturn();
+
+    // assert
+    verify(menuItemReviewRepository, times(1)).findById(eq(7L));
+    String expectedJson = mapper.writeValueAsString(review);
+    String responseString = response.getResponse().getContentAsString();
+    assertEquals(expectedJson, responseString);
+  }
+
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void test_getById_returns_404_if_it_does_not_exist() throws Exception {
+
+    // arrange
+    when(menuItemReviewRepository.findById(eq(7L))).thenReturn(Optional.empty());
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(get("/api/MenuItemReview?id=7"))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // assert
+    verify(menuItemReviewRepository, times(1)).findById(eq(7L));
+    Map<String, Object> json = responseToJson(response);
+    assertEquals("EntityNotFoundException", json.get("type"));
+    assertEquals("MenuItemReview with id 7 not found", json.get("message"));
+  }
+
+  // -------------------------------------------------------------------------
+  // Tests for POST /api/MenuItemReview/post
+  // -------------------------------------------------------------------------
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void an_admin_user_can_post_a_new_review() throws Exception {
+    LocalDateTime ldt1 = LocalDateTime.parse("2022-01-03T00:00:00");
+
+    MenuItemReview review1 =
+        MenuItemReview.builder()
+            .itemId(1L)
+            .reviewerEmail("cgaucho@ucsb.edu")
+            .stars(5)
+            .dateReviewed(ldt1)
+            .comments("Great food")
+            .build();
+
+    when(menuItemReviewRepository.save(review1)).thenReturn(review1);
+
+    MvcResult response =
+        mockMvc
+            .perform(
+                post("/api/MenuItemReview/post")
+                    .param("itemId", "1")
+                    .param("reviewerEmail", "cgaucho@ucsb.edu")
+                    .param("stars", "5")
+                    .param("dateReviewed", "2022-01-03T00:00:00")
+                    .param("comments", "Great food")
+                    .with(csrf()))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    verify(menuItemReviewRepository, times(1)).save(review1);
+    String expectedJson = mapper.writeValueAsString(review1);
+    String responseString = response.getResponse().getContentAsString();
+    assertEquals(expectedJson, responseString);
+  }
 }
