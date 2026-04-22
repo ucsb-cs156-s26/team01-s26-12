@@ -61,8 +61,7 @@ public class MenuItemReviewController extends ApiController {
   @PreAuthorize("hasRole('ROLE_ADMIN')")
   @PutMapping("")
   public MenuItemReview updateMenuItemReview(
-      @Parameter(name = "id") @RequestParam Long id,
-      @RequestBody @Valid MenuItemReview incoming) {
+      @Parameter(name = "id") @RequestParam Long id, @RequestBody @Valid MenuItemReview incoming) {
 
     MenuItemReview review =
         menuItemReviewRepository
