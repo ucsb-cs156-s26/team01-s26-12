@@ -1,6 +1,5 @@
 package edu.ucsb.cs156.example.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import edu.ucsb.cs156.example.entities.MenuItemReview;
 import edu.ucsb.cs156.example.errors.EntityNotFoundException;
 import edu.ucsb.cs156.example.repositories.MenuItemReviewRepository;
@@ -40,14 +39,38 @@ public class MenuItemReviewController extends ApiController {
   @Operation(summary = "Get a single review")
   @PreAuthorize("hasRole('ROLE_USER')")
   @GetMapping("")
-  public MenuItemReview getById(@Parameter(name = "id") @RequestParam Long id)
-      throws JsonProcessingException {
+  public MenuItemReview getById(@Parameter(name = "id") @RequestParam Long id) {
     MenuItemReview review =
         menuItemReviewRepository
             .findById(id)
             .orElseThrow(() -> new EntityNotFoundException(MenuItemReview.class, id));
 
     return review;
+  }
+
+  @Operation(summary = "Create a new review")
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @PostMapping("/post")
+  public MenuItemReview postMenuItemReview(
+      @Parameter(name = "itemId") @RequestParam Long itemId,
+      @Parameter(name = "reviewerEmail") @RequestParam String reviewerEmail,
+      @Parameter(name = "stars") @RequestParam int stars,
+      @Parameter(name = "dateReviewed", description = "date (in iso format, e.g. YYYY-mm-ddTHH:MM:SS)")
+          @RequestParam("dateReviewed")
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDateTime dateReviewed,
+      @Parameter(name = "comments") @RequestParam String comments) {
+
+    MenuItemReview review = new MenuItemReview();
+    review.setItemId(itemId);
+    review.setReviewerEmail(reviewerEmail);
+    review.setStars(stars);
+    review.setDateReviewed(dateReviewed);
+    review.setComments(comments);
+
+    MenuItemReview savedReview = menuItemReviewRepository.save(review);
+
+    return savedReview;
   }
 
   @Operation(summary = "Update a single review")
@@ -70,33 +93,5 @@ public class MenuItemReviewController extends ApiController {
     menuItemReviewRepository.save(review);
 
     return review;
-  }
-
-  @Operation(summary = "Create a new review")
-  @PreAuthorize("hasRole('ROLE_ADMIN')")
-  @PostMapping("/post")
-  public MenuItemReview postMenuItemReview(
-      @Parameter(name = "itemId") @RequestParam Long itemId,
-      @Parameter(name = "reviewerEmail") @RequestParam String reviewerEmail,
-      @Parameter(name = "stars") @RequestParam int stars,
-      @Parameter(
-              name = "dateReviewed",
-              description =
-                  "date (in iso format, e.g. YYYY-mm-ddTHH:MM:SS; e.g. 2022-01-03T00:00:00)")
-          @RequestParam("dateReviewed")
-          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-          LocalDateTime dateReviewed,
-      @Parameter(name = "comments") @RequestParam String comments) {
-
-    MenuItemReview menuItemReview = new MenuItemReview();
-    menuItemReview.setItemId(itemId);
-    menuItemReview.setReviewerEmail(reviewerEmail);
-    menuItemReview.setStars(stars);
-    menuItemReview.setDateReviewed(dateReviewed);
-    menuItemReview.setComments(comments);
-
-    MenuItemReview savedReview = menuItemReviewRepository.save(menuItemReview);
-
-    return savedReview;
   }
 }
