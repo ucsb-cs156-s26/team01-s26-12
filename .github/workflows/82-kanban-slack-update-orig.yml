@@ -1,4 +1,4 @@
-name: "82-kanban-slack-update.yml"
+name: "82b-kanban-slack-update.yml"
 
 # Instructions to set up the workflow can be found here:
 # <https://ucsb-cs156.github.io/topics/github_actions/workflow_82.html>
