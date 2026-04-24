@@ -23,4 +23,4 @@ repo_name: "TBD"
 repo: ucsb-cs156-s26/team01-s26-12
 owner: ucsb-cs156-s26
 repo_name: team01-s26-12
-pull_requests: [{"author":{"id":"U_kgDOC5a6rw","is_bot":false,"login":"lzuccaucsb","name":""},"headRefName":"lz-create-db-table-commits","number":51,"title":"lz -create database table for helprequests","url":"https://github.com/ucsb-cs156-s26/team01-s26-12/pull/51"}]
+pull_requests: [{"author":{"id":"U_kgDOC5a6rw","is_bot":false,"login":"lzuccaucsb","name":""},"headRefName":"lz-create-db-table-helprequests","number":52,"title":"Lz create db table helprequests","url":"https://github.com/ucsb-cs156-s26/team01-s26-12/pull/52"}]
