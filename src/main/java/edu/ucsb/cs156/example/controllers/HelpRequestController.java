@@ -78,7 +78,7 @@ public class HelpRequestController extends ApiController {
     helpRequest.setTableOrBreakoutRoom(tableOrBreakoutRoom);
     helpRequest.setRequestTime(requestTime);
     helpRequest.setExplanation(explanation);
-    helpRequest.setSolved(false);
+    helpRequest.setSolved(Boolean.parseBoolean(solved));
 
     HelpRequest savedHelpRequest = helprequestRepository.save(helpRequest);
 
