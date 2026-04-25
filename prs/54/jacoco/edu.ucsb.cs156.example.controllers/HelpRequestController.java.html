@@ -96,12 +96,12 @@ import org.springframework.web.bind.annotation.RestController;
   @PreAuthorize(&quot;hasRole('ROLE_USER')&quot;)
   @GetMapping(&quot;&quot;)
   public HelpRequest getById(@Parameter(name = &quot;id&quot;) @RequestParam Long id) {
-<span class="nc" id="L99">    HelpRequest helpRequest =</span>
+<span class="fc" id="L99">    HelpRequest helpRequest =</span>
         helprequestRepository
-<span class="nc" id="L101">            .findById(id)</span>
-<span class="nc" id="L102">            .orElseThrow(() -&gt; new EntityNotFoundException(HelpRequest.class, id));</span>
+<span class="fc" id="L101">            .findById(id)</span>
+<span class="fc" id="L102">            .orElseThrow(() -&gt; new EntityNotFoundException(HelpRequest.class, id));</span>
 
-<span class="nc" id="L104">    return helpRequest;</span>
+<span class="fc" id="L104">    return helpRequest;</span>
   }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
