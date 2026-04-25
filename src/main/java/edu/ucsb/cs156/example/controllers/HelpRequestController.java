@@ -2,6 +2,7 @@ package edu.ucsb.cs156.example.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import edu.ucsb.cs156.example.entities.HelpRequest;
+import edu.ucsb.cs156.example.errors.EntityNotFoundException;
 import edu.ucsb.cs156.example.repositories.HelpRequestRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -83,5 +84,23 @@ public class HelpRequestController extends ApiController {
     HelpRequest savedHelpRequest = helprequestRepository.save(helpRequest);
 
     return savedHelpRequest;
+  }
+
+  /**
+   * Get a single helprequest by id
+   *
+   * @param id the id of the helprequest
+   * @return the helprequest
+   */
+  @Operation(summary = "Get a single helprequest")
+  @PreAuthorize("hasRole('ROLE_USER')")
+  @GetMapping("")
+  public HelpRequest getById(@Parameter(name = "id") @RequestParam Long id) {
+    HelpRequest helpRequest =
+        helprequestRepository
+            .findById(id)
+            .orElseThrow(() -> new EntityNotFoundException(HelpRequest.class, id));
+
+    return helpRequest;
   }
 }
