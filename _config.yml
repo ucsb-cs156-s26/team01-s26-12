@@ -23,4 +23,4 @@ repo_name: "TBD"
 repo: ucsb-cs156-s26/team01-s26-12
 owner: ucsb-cs156-s26
 repo_name: team01-s26-12
-pull_requests: [{"author":{"id":"U_kgDODqxeNQ","is_bot":false,"login":"MrPau13","name":""},"headRefName":"pm-UCSBOrganization-create-db","number":57,"title":"pm - Creat database table for UCSBOrganization","url":"https://github.com/ucsb-cs156-s26/team01-s26-12/pull/57"}]
+pull_requests: [{"author":{"id":"U_kgDOCu8TgA","is_bot":false,"login":"JayYeung5","name":""},"headRefName":"jy-UCSBDiningCommonsMenu-create-database","number":58,"title":"jy - create ucsbdiningcommonsmenuitem database table","url":"https://github.com/ucsb-cs156-s26/team01-s26-12/pull/58"},{"author":{"id":"U_kgDODqxeNQ","is_bot":false,"login":"MrPau13","name":""},"headRefName":"pm-UCSBOrganization-create-db","number":57,"title":"pm - Creat database table for UCSBOrganization","url":"https://github.com/ucsb-cs156-s26/team01-s26-12/pull/57"}]
