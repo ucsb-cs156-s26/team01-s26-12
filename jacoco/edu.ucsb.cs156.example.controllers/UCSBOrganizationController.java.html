@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,8 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = &quot;UCSBOrganization&quot;)
 @RequestMapping(&quot;/api/ucsborganization&quot;)
 @RestController
-<span class="fc" id="L22">@Slf4j</span>
-<span class="fc" id="L23">public class UCSBOrganizationController extends ApiController {</span>
+<span class="fc" id="L24">@Slf4j</span>
+<span class="fc" id="L25">public class UCSBOrganizationController extends ApiController {</span>
 
   @Autowired UCSBOrganizationRepository ucsbOrganizationRepository;
 
@@ -28,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
   @PreAuthorize(&quot;hasRole('ROLE_USER')&quot;)
   @GetMapping(&quot;/all&quot;)
   public Iterable&lt;UCSBOrganization&gt; allOrganizations() {
-<span class="fc" id="L31">    return ucsbOrganizationRepository.findAll();</span>
+<span class="fc" id="L33">    return ucsbOrganizationRepository.findAll();</span>
   }
 
   @Operation(summary = &quot;Get a single record from the table&quot;)
@@ -38,12 +40,12 @@ import org.springframework.web.bind.annotation.RestController;
       @Parameter(name = &quot;id&quot;, description = &quot;The unique organization code, e.g. 'ZPR'&quot;)
           @RequestParam
           String id) {
-<span class="fc" id="L41">    UCSBOrganization organization =</span>
+<span class="fc" id="L43">    UCSBOrganization organization =</span>
         ucsbOrganizationRepository
-<span class="fc" id="L43">            .findById(id)</span>
-<span class="fc" id="L44">            .orElseThrow(() -&gt; new EntityNotFoundException(UCSBOrganization.class, id));</span>
+<span class="fc" id="L45">            .findById(id)</span>
+<span class="fc" id="L46">            .orElseThrow(() -&gt; new EntityNotFoundException(UCSBOrganization.class, id));</span>
 
-<span class="fc" id="L46">    return organization;</span>
+<span class="fc" id="L48">    return organization;</span>
   }
 
   @Operation(summary = &quot;Create a new organization&quot;)
@@ -55,13 +57,33 @@ import org.springframework.web.bind.annotation.RestController;
       @Parameter(name = &quot;orgTranslation&quot;) @RequestParam String orgTranslation,
       @Parameter(name = &quot;inactive&quot;) @RequestParam boolean inactive) {
 
-<span class="fc" id="L58">    UCSBOrganization organization = new UCSBOrganization();</span>
-<span class="fc" id="L59">    organization.setOrgCode(orgCode);</span>
-<span class="fc" id="L60">    organization.setOrgTranslationShort(orgTranslationShort);</span>
-<span class="fc" id="L61">    organization.setOrgTranslation(orgTranslation);</span>
-<span class="fc" id="L62">    organization.setInactive(inactive);</span>
+<span class="fc" id="L60">    UCSBOrganization organization = new UCSBOrganization();</span>
+<span class="fc" id="L61">    organization.setOrgCode(orgCode);</span>
+<span class="fc" id="L62">    organization.setOrgTranslationShort(orgTranslationShort);</span>
+<span class="fc" id="L63">    organization.setOrgTranslation(orgTranslation);</span>
+<span class="fc" id="L64">    organization.setInactive(inactive);</span>
 
-<span class="fc" id="L64">    return ucsbOrganizationRepository.save(organization);</span>
+<span class="fc" id="L66">    return ucsbOrganizationRepository.save(organization);</span>
+  }
+
+  @Operation(summary = &quot;Update a single organization&quot;)
+  @PreAuthorize(&quot;hasRole('ROLE_ADMIN')&quot;)
+  @PutMapping(&quot;&quot;)
+  public UCSBOrganization updateUCSBOrganization(
+      @Parameter(name = &quot;id&quot;) @RequestParam String id, @RequestBody UCSBOrganization incoming) {
+
+<span class="fc" id="L75">    UCSBOrganization org =</span>
+        ucsbOrganizationRepository
+<span class="fc" id="L77">            .findById(id)</span>
+<span class="fc" id="L78">            .orElseThrow(() -&gt; new EntityNotFoundException(UCSBOrganization.class, id));</span>
+
+<span class="fc" id="L80">    org.setOrgTranslationShort(incoming.getOrgTranslationShort());</span>
+<span class="fc" id="L81">    org.setOrgTranslation(incoming.getOrgTranslation());</span>
+<span class="fc" id="L82">    org.setInactive(incoming.getInactive());</span>
+
+<span class="fc" id="L84">    ucsbOrganizationRepository.save(org);</span>
+
+<span class="fc" id="L86">    return org;</span>
   }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
