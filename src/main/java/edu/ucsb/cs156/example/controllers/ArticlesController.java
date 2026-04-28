@@ -7,6 +7,7 @@ import edu.ucsb.cs156.example.repositories.ArticlesRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -89,5 +92,27 @@ public class ArticlesController extends ApiController {
 
     articlesRepository.delete(article);
     return genericMessage("Articles with id %s deleted".formatted(id));
+  }
+
+  @Operation(summary = "Update a single article")
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @PutMapping("")
+  public Articles updateArticle(
+      @Parameter(name = "id") @RequestParam Long id, @RequestBody @Valid Articles incoming) {
+
+    Articles article =
+        articlesRepository
+            .findById(id)
+            .orElseThrow(() -> new EntityNotFoundException(Articles.class, id));
+
+    article.setTitle(incoming.getTitle());
+    article.setUrl(incoming.getUrl());
+    article.setExplanation(incoming.getExplanation());
+    article.setEmail(incoming.getEmail());
+    article.setDateAdded(incoming.getDateAdded());
+
+    articlesRepository.save(article);
+
+    return article;
   }
 }
