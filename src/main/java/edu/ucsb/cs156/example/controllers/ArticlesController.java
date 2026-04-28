@@ -35,6 +35,18 @@ public class ArticlesController extends ApiController {
     return articles;
   }
 
+  @Operation(summary = "Get a single article")
+  @PreAuthorize("hasRole('ROLE_USER')")
+  @GetMapping("")
+  public Articles getById(@Parameter(name = "id") @RequestParam Long id) {
+    Articles article =
+        articlesRepository
+            .findById(id)
+            .orElseThrow(() -> new EntityNotFoundException(Articles.class, id));
+
+    return article;
+  }
+
   @Operation(summary = "Create a new article")
   @PreAuthorize("hasRole('ROLE_ADMIN')")
   @PostMapping("/post")
