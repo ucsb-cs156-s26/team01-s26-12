@@ -166,7 +166,10 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
 
     // act
     MvcResult response =
-        mockMvc.perform(get("/api/ucsborganization?id=ZPR")).andExpect(status().isOk()).andReturn();
+        mockMvc
+            .perform(get("/api/ucsborganization?orgCode=ZPR"))
+            .andExpect(status().isOk())
+            .andReturn();
 
     // assert
     verify(ucsbOrganizationRepository, times(1)).findById(eq("ZPR"));
@@ -185,7 +188,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
     // act
     MvcResult response =
         mockMvc
-            .perform(get("/api/ucsborganization?id=FAKE"))
+            .perform(get("/api/ucsborganization?orgCode=FAKE"))
             .andExpect(status().isNotFound())
             .andReturn();
 
@@ -226,7 +229,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
     MvcResult response =
         mockMvc
             .perform(
-                put("/api/ucsborganization?id=SKY")
+                put("/api/ucsborganization?orgCode=SKY")
                     .contentType("application/json")
                     .content(requestBody)
                     .with(csrf()))
@@ -260,7 +263,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
     MvcResult response =
         mockMvc
             .perform(
-                put("/api/ucsborganization?id=FAKE")
+                put("/api/ucsborganization?orgCode=FAKE")
                     .contentType("application/json")
                     .content(requestBody)
                     .with(csrf()))
@@ -292,7 +295,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
     // act
     MvcResult response =
         mockMvc
-            .perform(delete("/api/ucsborganization").param("id", "ZPR").with(csrf()))
+            .perform(delete("/api/ucsborganization").param("orgCode", "ZPR").with(csrf()))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -315,7 +318,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
     // act
     MvcResult response =
         mockMvc
-            .perform(delete("/api/ucsborganization").param("id", "FAKE").with(csrf()))
+            .perform(delete("/api/ucsborganization").param("orgCode", "FAKE").with(csrf()))
             .andExpect(status().isNotFound())
             .andReturn();
 
